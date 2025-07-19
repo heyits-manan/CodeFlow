@@ -146,6 +146,18 @@ export default function App() {
     const handleKeydown = (e: KeyboardEvent) => {
       if (!activeFile) return;
 
+      // CMD+W / Ctrl+W - Close current tab
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key.toLowerCase() === "w" &&
+        !e.shiftKey
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleTabClose(activeFile);
+        return;
+      }
+
       // Ctrl+S / Cmd+S - Save (like VS Code)
       if (
         (e.ctrlKey || e.metaKey) &&
@@ -153,6 +165,7 @@ export default function App() {
         !e.shiftKey
       ) {
         e.preventDefault();
+        e.stopPropagation();
         handleSave(activeFile);
       }
 
@@ -163,6 +176,7 @@ export default function App() {
         e.shiftKey
       ) {
         e.preventDefault();
+        e.stopPropagation();
         handleSaveAs(activeFile);
       }
 
@@ -173,13 +187,14 @@ export default function App() {
         e.key.toLowerCase() === "i"
       ) {
         e.preventDefault();
+        e.stopPropagation();
         setIsChatOpen(!isChatOpen);
       }
     };
 
     window.addEventListener("keydown", handleKeydown);
     return () => window.removeEventListener("keydown", handleKeydown);
-  }, [activeFile, handleSave, handleSaveAs, isChatOpen]); // Add isChatOpen to dependencies
+  }, [activeFile, handleSave, handleSaveAs, handleTabClose, isChatOpen]); // Add handleTabClose to dependencies
 
   const handleOpenFolder = useCallback(async () => {
     try {
