@@ -8,7 +8,12 @@ const {
 } = require("electron");
 const path = require("path");
 const fs = require("fs").promises; // Use promises for better async handling
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 require("dotenv").config();
+
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 let mainWindow;
 
@@ -23,8 +28,6 @@ function createWindow() {
       enableRemoteModule: false,
     },
   });
-
-  console.log(path.join(__dirname, "preload.js"));
 
   const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 
@@ -48,7 +51,6 @@ function createWindow() {
     // mainWindow.webContents.openDevTools();
   } else {
     const buildPath = path.join(__dirname, "renderer/dist/index.html");
-    console.log("build file: ", buildPath);
     mainWindow.loadFile(buildPath);
   }
 }
@@ -205,8 +207,6 @@ ipcMain.handle(
       // Write file using async fs
       await fs.writeFile(absolutePath, content, "utf-8");
 
-      console.log(`✅ File saved successfully: ${absolutePath}`);
-
       // Return relative path to maintain frontend consistency
       const relativePath = path.relative(process.cwd(), absolutePath);
 
@@ -288,6 +288,20 @@ ipcMain.handle("close-window", async () => {
   const focusedWindow = BrowserWindow.getFocusedWindow();
   if (focusedWindow) {
     focusedWindow.close();
+  }
+});
+
+// Chat functionality with Gemini AI
+ipcMain.handle("send-chat-message", async (event, message) => {
+  try {
+    const prompt = `You are a helpful AI assistant for a code editor. Help the user with their coding questions and provide clear, concise answers. User message: ${message}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error("Gemini API error:", error);
+    throw new Error("Failed to get AI response");
   }
 });
 

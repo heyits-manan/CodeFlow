@@ -14,11 +14,12 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "electron": "^37.2.3",
     "concurrently": "^8.2.2",
+    "electron": "^37.2.3",
     "wait-on": "^7.2.0"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "dotenv": "^17.2.0",
     "monaco-editor": "^0.52.2"
   }

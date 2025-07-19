@@ -1,33 +1,31 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
 import {
+  Archive,
+  Braces,
   ChevronDown,
   ChevronRight,
+  Database,
   File,
   FileCode2,
   FileImage,
   FileJson,
+  FileSpreadsheet,
   FileText,
+  FileVideo,
   Folder,
   FolderOpen,
   FolderPlus,
+  Globe,
   Loader2,
+  Music,
+  Palette,
   Search,
   Settings,
-  Database,
-  FileVideo,
-  Music,
-  Archive,
-  Hash,
-  Braces,
-  Globe,
-  Palette,
-  FileSpreadsheet,
-  Plus,
   X,
 } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { FileItem, WorkspaceFolder } from "../../../interface";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 
 // Enhanced modern styling with glassmorphism and better color scheme
 const styles = {

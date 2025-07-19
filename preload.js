@@ -44,4 +44,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveWorkspace: (workspaceConfig) =>
     ipcRenderer.invoke("save-workspace", workspaceConfig),
   loadWorkspace: () => ipcRenderer.invoke("load-workspace"),
+
+  // Chat functionality
+  sendChatMessage: (message) =>
+    ipcRenderer.invoke("send-chat-message", message),
 });

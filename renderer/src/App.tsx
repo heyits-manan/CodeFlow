@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
 import { X } from "lucide-react";
 import { useFileOperations } from "./hooks/use-file-operations";
+import { ChatBar } from "./components/ChatBar";
 import type { WorkspaceFolder } from "../../interface";
 
 interface OpenFile {
@@ -21,6 +22,9 @@ export default function App() {
   const [fileExplorerWidth, setFileExplorerWidth] = useState(300);
   const [currentWorkspace, setCurrentWorkspace] =
     useState<WorkspaceFolder | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatBarWidth, setChatBarWidth] = useState(350);
+  const [isResizingChat, setIsResizingChat] = useState(false);
   const minFileExplorerWidth = 200;
   const maxFileExplorerWidth = 600;
 
@@ -41,6 +45,31 @@ export default function App() {
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
   };
+
+  // Chat resize handlers
+  const handleChatResize = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizingChat) return;
+      const newWidth = window.innerWidth - e.clientX;
+      setChatBarWidth(Math.max(250, Math.min(600, newWidth)));
+    },
+    [isResizingChat]
+  );
+
+  const handleChatMouseDown = useCallback(() => {
+    setIsResizingChat(true);
+  }, []);
+
+  useEffect(() => {
+    if (isResizingChat) {
+      document.addEventListener("mousemove", handleChatResize);
+      document.addEventListener("mouseup", () => setIsResizingChat(false));
+      return () => {
+        document.removeEventListener("mousemove", handleChatResize);
+        document.removeEventListener("mouseup", () => setIsResizingChat(false));
+      };
+    }
+  }, [isResizingChat, handleChatResize]);
 
   // Store Monaco editor instances to get current content
   const editorInstances = useRef<Map<string, any>>(new Map());
@@ -136,11 +165,21 @@ export default function App() {
         e.preventDefault();
         handleSaveAs(activeFile);
       }
+
+      // CMD+SHIFT+I / Ctrl+Shift+I - Toggle Chat Bar
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        e.key.toLowerCase() === "i"
+      ) {
+        e.preventDefault();
+        setIsChatOpen(!isChatOpen);
+      }
     };
 
     window.addEventListener("keydown", handleKeydown);
     return () => window.removeEventListener("keydown", handleKeydown);
-  }, [activeFile, handleSave, handleSaveAs]);
+  }, [activeFile, handleSave, handleSaveAs, isChatOpen]); // Add isChatOpen to dependencies
 
   const handleOpenFolder = useCallback(async () => {
     try {
@@ -305,79 +344,99 @@ export default function App() {
         className="h-full w-2 cursor-ew-resize bg-slate-700/50 hover:bg-slate-600/70 transition-colors duration-200"
         onMouseDown={handleMouseDown}
       />
-      <main className="flex-1 flex flex-col min-w-0">
-        {" "}
-        {/* Add min-w-0 to prevent flex overflow */}
-        {/* Save Status Bar */}
-        {/* Removed saveStatus && (...) */}
-        {openFiles.length > 0 ? (
-          <Tabs
-            value={activeFile || ""}
-            onValueChange={setActiveFile}
-            className="flex-1 flex flex-col h-full"
-          >
-            <TabsList className="w-full justify-start rounded-none bg-background p-0 h-10">
-              {openFiles
-                .filter((file) => file.path)
-                .map((file) => (
-                  <TabsTrigger
-                    key={file.path}
-                    value={file.path}
-                    className="relative rounded-none border-r px-4 py-2 text-sm data-[state=active]:bg-background data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-blue-500 after:scale-x-0 data-[state=active]:after:scale-x-100 after:transition-transform after:duration-200"
-                  >
-                    <span className="mr-2 flex items-center">
-                      {/* Modified indicator (like VS Code's * for unsaved files) */}
-                      {file.isModified && (
-                        <span className="text-orange-500 mr-1">●</span>
-                      )}
-                      {getFileName(file.path)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTabClose(file.path);
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </TabsTrigger>
-                ))}
-            </TabsList>
+      <main className="flex-1 flex flex-col min-w-0 h-full">
+        {/* Editor and Chat Layout */}
+        <div className="flex-1 flex h-full">
+          {/* Editor Content */}
+          <div className="flex-1 flex flex-col min-w-0 h-full">
+            {/* Save Status Bar */}
+            {/* Removed saveStatus && (...) */}
+            {openFiles.length > 0 ? (
+              <Tabs
+                value={activeFile || ""}
+                onValueChange={setActiveFile}
+                className="flex-1 flex flex-col h-full"
+              >
+                <TabsList className="w-full justify-start rounded-none bg-background p-0 h-10">
+                  {openFiles
+                    .filter((file) => file.path)
+                    .map((file) => (
+                      <TabsTrigger
+                        key={file.path}
+                        value={file.path}
+                        className="relative rounded-none border-r px-4 py-2 text-sm data-[state=active]:bg-background data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-blue-500 after:scale-x-0 data-[state=active]:after:scale-x-100 after:transition-transform after:duration-200"
+                      >
+                        <span className="mr-2 flex items-center">
+                          {/* Modified indicator (like VS Code's * for unsaved files) */}
+                          {file.isModified && (
+                            <span className="text-orange-500 mr-1">●</span>
+                          )}
+                          {getFileName(file.path)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTabClose(file.path);
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </TabsTrigger>
+                    ))}
+                </TabsList>
 
-            {openFiles
-              .filter((file) => file.path)
-              .map((file) => (
-                <TabsContent
-                  key={file.path}
-                  value={file.path}
-                  className="flex-1 h-full m-0 p-0"
-                >
-                  <MemoizedTabContent
-                    filePath={file.path}
-                    content={file.content}
-                    isModified={file.isModified}
-                    onContentChange={handleFileChange}
-                    onEditorMount={handleEditorMount}
-                    getFileName={getFileName}
-                    onSave={handleSave}
-                    onSaveAs={handleSaveAs}
-                  />
-                </TabsContent>
-              ))}
-          </Tabs>
-        ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            <div className="text-center">
-              <p className="text-lg mb-2">Select a file to edit</p>
-              <p className="text-sm text-muted-foreground">
-                Use Ctrl+S to save, Ctrl+Shift+S to save as
-              </p>
-            </div>
+                {openFiles
+                  .filter((file) => file.path)
+                  .map((file) => (
+                    <TabsContent
+                      key={file.path}
+                      value={file.path}
+                      className="flex-1 h-full m-0 p-0"
+                    >
+                      <MemoizedTabContent
+                        filePath={file.path}
+                        content={file.content}
+                        isModified={file.isModified}
+                        onContentChange={handleFileChange}
+                        onEditorMount={handleEditorMount}
+                        getFileName={getFileName}
+                        onSave={handleSave}
+                        onSaveAs={handleSaveAs}
+                      />
+                    </TabsContent>
+                  ))}
+              </Tabs>
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <p className="text-lg mb-2">Select a file to edit</p>
+                  <p className="text-sm text-muted-foreground">
+                    Use Ctrl+S to save, Ctrl+Shift+S to save as
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Chat Resizer */}
+          {isChatOpen && (
+            <div
+              className="w-1 bg-neutral-700 cursor-col-resize hover:bg-neutral-600 transition-colors"
+              onMouseDown={handleChatMouseDown}
+            />
+          )}
+
+          {/* Chat Bar */}
+          <ChatBar
+            isOpen={isChatOpen}
+            onToggle={() => setIsChatOpen(!isChatOpen)}
+            width={chatBarWidth}
+            onWidthChange={setChatBarWidth}
+          />
+        </div>
       </main>
     </div>
   );

@@ -20,6 +20,7 @@ export interface IElectronAPI {
     workspaceConfig: any
   ) => Promise<{ success: boolean; error?: string }>;
   loadWorkspace: () => Promise<any>;
+  sendChatMessage: (message: string) => Promise<string>;
   on: (channel: string, callback: (...args: any[]) => void) => void;
   removeAllListeners: (channel: string) => void;
 }
