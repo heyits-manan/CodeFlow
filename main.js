@@ -17,6 +17,31 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 let mainWindow;
 
+// Move environment detection outside createWindow
+const isDev = (() => {
+  // Most reliable check first
+  if (app.isPackaged === false) return true;
+
+  // Environment variable checks
+  if (process.env.NODE_ENV === "development") return true;
+  if (process.env.ELECTRON_IS_DEV === "1") return true;
+
+  // Default to production
+  return false;
+})();
+
+// Initialize electron-reload only once, at startup, and only in development
+if (isDev) {
+  try {
+    require("electron-reload")(__dirname, {
+      electron: path.join(__dirname, "..", "node_modules", ".bin", "electron"),
+      hardResetMethod: "exit",
+    });
+  } catch (error) {
+    console.log("electron-reload not available in production build");
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -28,8 +53,6 @@ function createWindow() {
       enableRemoteModule: false,
     },
   });
-
-  const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
@@ -294,7 +317,43 @@ ipcMain.handle("close-window", async () => {
 // Chat functionality with Gemini AI
 ipcMain.handle("send-chat-message", async (event, message) => {
   try {
-    const prompt = `You are a helpful AI assistant for a code editor. Help the user with their coding questions and provide clear, concise answers. User message: ${message}`;
+    const prompt = `You are a helpful AI assistant for a code editor. Help the user with their coding questions and provide clear, concise answers.
+
+🎨 BEAUTIFUL FORMATTING INSTRUCTIONS:
+- Use emojis to make responses more engaging and friendly
+- Use **bold text** for important concepts, keywords, and emphasis
+- Use *italic text* for subtle emphasis and definitions
+- Use \`inline code\` for technical terms, function names, and short code snippets
+- When providing code examples, always use proper markdown code blocks with language specification
+- Format code blocks like this: \`\`\`javascript\n// your code here\n\`\`\`
+- Use appropriate language tags for code blocks (javascript, typescript, python, html, css, etc.)
+- Add visual separators like "---" between sections
+- Use bullet points with emojis for lists: • 🚀 • ⚡ • 💡
+- Highlight important warnings with ⚠️ and tips with 💡
+- Use 🎯 for main points, 🔧 for technical details, 📝 for notes
+- Keep explanations clear, concise, and visually appealing
+- If the entire response is code, format it as a single code block
+- If mixing text and code, separate them clearly with line breaks
+
+📱 RESPONSIVE DESIGN INSTRUCTIONS:
+- Keep text lines reasonably short (max 80-100 characters) for better readability on smaller screens
+- Break long explanations into shorter paragraphs
+- Use bullet points and lists to improve scanning on mobile devices
+- When writing long URLs or file paths, consider breaking them into multiple lines
+- For very long code examples, consider splitting them into smaller, focused snippets
+- Use clear section headers to improve navigation on smaller screens
+
+Example format:
+🎯 **Main Point**: Here's what you need to know
+💡 **Tip**: This is a helpful tip
+🔧 **Technical Detail**: Here's the technical explanation
+\`inline code\` and **bold important terms**
+
+\`\`\`javascript
+// Your code example
+\`\`\`
+
+User message: ${message}`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;

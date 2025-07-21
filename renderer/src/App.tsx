@@ -27,6 +27,7 @@ export default function App() {
   const [isResizingChat, setIsResizingChat] = useState(false);
   const minFileExplorerWidth = 200;
   const maxFileExplorerWidth = 600;
+  
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -92,6 +93,85 @@ export default function App() {
     openFiles,
     getFileName,
   });
+
+  // Function to insert code into the current active file
+  const handleInsertCode = useCallback(
+    (code: string, fileName?: string) => {
+      if (!activeFile) {
+        showNotification("No active file to insert code into", 3000);
+        return;
+      }
+
+      const editorInstance = editorInstances.current.get(activeFile);
+      if (!editorInstance) {
+        showNotification("Editor not ready", 3000);
+        return;
+      }
+
+      try {
+        const currentContent = editorInstance.getValue();
+        const cursorPosition = editorInstance.getPosition();
+
+        // Insert code at cursor position
+        editorInstance.executeEdits("insert-code", [
+          {
+            range: {
+              startLineNumber: cursorPosition.lineNumber,
+              startColumn: cursorPosition.column,
+              endLineNumber: cursorPosition.lineNumber,
+              endColumn: cursorPosition.column,
+            },
+            text: code,
+          },
+        ]);
+
+        // Mark file as modified
+        setOpenFiles((prev) =>
+          prev.map((file) =>
+            file.path === activeFile ? { ...file, isModified: true } : file
+          )
+        );
+
+        showNotification(`Code inserted into ${getFileName(activeFile)}`, 2000);
+      } catch (error) {
+        console.error("Failed to insert code:", error);
+        showNotification("Failed to insert code", 3000);
+      }
+    },
+    [activeFile, editorInstances, setOpenFiles, getFileName, showNotification]
+  );
+
+  // Function to create a new file with the provided code
+  const handleCreateFile = useCallback(
+    async (code: string, fileName: string) => {
+      try {
+        // Generate a unique file path
+        const timestamp = Date.now();
+        const fileExtension = fileName.includes(".") ? "" : ".js";
+        const newFileName = fileName.includes(".")
+          ? fileName
+          : `${fileName}${fileExtension}`;
+        const newFilePath = `new-file-${timestamp}-${newFileName}`;
+
+        // Add the new file to open files
+        const newFile: OpenFile = {
+          path: newFilePath,
+          content: code,
+          originalContent: code,
+          isModified: false,
+        };
+
+        setOpenFiles((prev) => [...prev, newFile]);
+        setActiveFile(newFilePath);
+
+        showNotification(`Created new file: ${newFileName}`, 2000);
+      } catch (error) {
+        console.error("Failed to create new file:", error);
+        showNotification("Failed to create new file", 3000);
+      }
+    },
+    [setOpenFiles, setActiveFile, showNotification]
+  );
 
   const handleFileSelect = async (filePath: string) => {
     // Check if file is already open
@@ -450,6 +530,8 @@ export default function App() {
             onToggle={() => setIsChatOpen(!isChatOpen)}
             width={chatBarWidth}
             onWidthChange={setChatBarWidth}
+            onInsertCode={handleInsertCode}
+            onCreateFile={handleCreateFile}
           />
         </div>
       </main>

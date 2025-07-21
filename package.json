@@ -22,5 +22,14 @@
     "@google/generative-ai": "^0.24.1",
     "dotenv": "^17.2.0",
     "monaco-editor": "^0.52.2"
+  },
+  "build": {
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/dist/**/*",
+      "!node_modules/electron-reload",
+      "!node_modules/concurrently"
+    ]
   }
 }

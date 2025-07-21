@@ -86,3 +86,33 @@
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
 }
+
+/* Custom scrollbar for code blocks */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 8px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: rgba(51, 65, 85, 0.3);
+  border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.7);
+  border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.9);
+}
+
+/* For Firefox */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.7) rgba(51, 65, 85, 0.3);
+}
+
+/* Ensure scrollbar is always visible on hover */
+.overflow-x-auto:hover::-webkit-scrollbar {
+  height: 10px;
+}
