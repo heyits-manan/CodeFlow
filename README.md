@@ -1,5 +1,7 @@
 # CodeFlow IDE
 
+<img width="1899" height="1040" alt="Screenshot 2025-08-11 at 11 12 14 PM" src="https://github.com/user-attachments/assets/ed03420f-2032-4ed2-9524-74f8241afacb" />
+
 A modern, AI-powered code editor built with Electron and React, inspired by VS Code and Cursor. CodeFlow combines a sleek interface with intelligent features to enhance your coding experience.
 
 Editor Features
