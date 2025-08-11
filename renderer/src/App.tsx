@@ -27,7 +27,8 @@ export default function App() {
   const [isResizingChat, setIsResizingChat] = useState(false);
   const minFileExplorerWidth = 200;
   const maxFileExplorerWidth = 600;
-  
+
+  console.log("Hello")
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();

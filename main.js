@@ -8,12 +8,25 @@ const {
 } = require("electron");
 const path = require("path");
 const fs = require("fs").promises; // Use promises for better async handling
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 require("dotenv").config();
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const { GoogleGenAI } = require("@google/genai");
+
+// Keep original Gemini AI for fallback using new SDK
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+// Test the API key with a simple call
+
+(async () => {
+  try {
+    await genAI.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: [{ text: "Hello" }],
+    });
+  } catch (error) {
+    console.error("❌ Gemini API connection failed:", error.message);
+  }
+})();
 
 let mainWindow;
 
@@ -30,17 +43,12 @@ const isDev = (() => {
   return false;
 })();
 
-// Initialize electron-reload only once, at startup, and only in development
-if (isDev) {
-  try {
-    require("electron-reload")(__dirname, {
-      electron: path.join(__dirname, "..", "node_modules", ".bin", "electron"),
-      hardResetMethod: "exit",
-    });
-  } catch (error) {
-    console.log("electron-reload not available in production build");
-  }
-}
+// Debug environment detection
+
+// Disabled electron-reload for clean VS Code-like experience
+// If you need auto-reload functionality in the future, you can:
+// 1. Install electron-reload: npm install electron-reload
+// 2. Uncomment and configure the code below with specific file patterns
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -57,18 +65,47 @@ function createWindow() {
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
 
-    // Handle dev server restarts more gracefully
+    // More intelligent dev server restart handling
+    let reloadAttempts = 0;
+    const maxReloadAttempts = 3;
+
+    // Add a more robust approach to prevent unnecessary reloads
+    let lastReloadTime = 0;
+    const minReloadInterval = 5000; // Minimum 5 seconds between reloads
+
     mainWindow.webContents.on(
       "did-fail-load",
       (event, errorCode, errorDescription, validatedURL) => {
-        // If dev server is restarting, wait a bit and try again
-        if (validatedURL === "http://localhost:5173/") {
+        const now = Date.now();
+
+        // Only reload for actual dev server failures, not temporary network issues
+        if (
+          validatedURL === "http://localhost:5173/" &&
+          errorCode === -6 && // ERR_CONNECTION_REFUSED
+          reloadAttempts < maxReloadAttempts &&
+          now - lastReloadTime > minReloadInterval // Prevent rapid reloads
+        ) {
+          reloadAttempts++;
+          lastReloadTime = now;
+
+          // Wait longer before reloading to avoid interrupting file saves
           setTimeout(() => {
-            mainWindow.reload();
-          }, 1000);
+            // Double-check that we still need to reload
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.reload();
+            }
+          }, 2000);
         }
       }
     );
+
+    // Reset reload attempts counter on successful load
+    mainWindow.webContents.on("did-finish-load", () => {
+      reloadAttempts = 0;
+    });
+
+    // Additional debugging for network events
+    mainWindow.webContents.on("did-navigate", (event, url) => {});
 
     // Open DevTools in development
     // mainWindow.webContents.openDevTools();
@@ -355,14 +392,76 @@ Example format:
 
 User message: ${message}`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    const result = await genAI.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: [{ text: prompt }],
+      generationConfig: {
+        maxOutputTokens: 1024,
+        temperature: 0.7,
+      },
+    });
+    const response = result.candidates[0].content.parts[0].text;
+    return response;
   } catch (error) {
     console.error("Gemini API error:", error);
     throw new Error("Failed to get AI response");
   }
 });
+
+// AI-powered inline code completion
+ipcMain.on(
+  "get-code-completion",
+  async (event, { textBeforeCursor, textAfterCursor, language, requestId }) => {
+    try {
+      // Better prompt for code completion
+      const prompt = `You are an expert ${language} code completion assistant. 
+
+Complete the following code. Provide ONLY the code that should be inserted at the cursor position. 
+Do NOT include any explanations, comments about what you're doing, or markdown formatting.
+Do NOT repeat the existing code.
+Focus on providing meaningful, contextually appropriate completions.
+
+Existing code before cursor:
+\`\`\`${language}
+${textBeforeCursor}
+\`\`\`
+
+Code after cursor (for context):
+\`\`\`${language}
+${textAfterCursor}
+\`\`\`
+
+Complete the code at the cursor position:`;
+
+      const result = await genAI.models.generateContent({
+        model: "gemini-2.0-flash-exp", // Use the experimental model for better code completion
+        contents: [{ text: prompt }],
+        generationConfig: {
+          maxOutputTokens: 200,
+          temperature: 0.1, // Lower temperature for more focused completions
+          topP: 0.9,
+          topK: 40,
+        },
+      });
+
+      let completion = result.candidates[0].content.parts[0].text.trim();
+
+      // Clean up the completion
+      completion = completion.replace(/^``````$/, "");
+      completion = completion.replace(/^```\w*$/, "");
+      completion = completion.replace(/^```$/, "");
+
+      // Send the result back to the renderer with the same request ID
+      event.sender.send("code-completion-response", { completion, requestId });
+    } catch (error) {
+      console.error("❌ Error fetching Gemini completion:", error);
+      event.sender.send("code-completion-response", {
+        completion: null,
+        requestId,
+      });
+    }
+  }
+);
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();

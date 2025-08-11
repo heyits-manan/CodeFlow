@@ -21,6 +21,19 @@ export interface IElectronAPI {
   ) => Promise<{ success: boolean; error?: string }>;
   loadWorkspace: () => Promise<any>;
   sendChatMessage: (message: string) => Promise<string>;
+  sendCodeCompletionRequest: (params: {
+    textBeforeCursor: string;
+    textAfterCursor: string;
+    language: string;
+    requestId: string;
+  }) => void;
+  onCodeCompletionResponse: (
+    callback: (
+      event: any,
+      data: { completion: string | null; requestId: string }
+    ) => void
+  ) => void;
+
   on: (channel: string, callback: (...args: any[]) => void) => void;
   removeAllListeners: (channel: string) => void;
 }

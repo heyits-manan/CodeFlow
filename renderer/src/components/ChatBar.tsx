@@ -3,6 +3,15 @@ import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+
+/**
+ * ChatBar Component with AI Assistant
+ *
+ * ✅ Responsive Text: Proper text wrapping and overflow handling
+ * ✅ Code Block Support: Syntax highlighting with responsive containers
+ * ✅ Message Layout: Optimized for different screen sizes
+ * ✅ AI Integration: Gemini AI for intelligent code assistance
+ */
 import {
   MessageCircle,
   Send,
@@ -34,7 +43,7 @@ interface ChatBarProps {
   onCreateFile?: (code: string, fileName: string) => void;
 }
 
-// Enhanced CodeBlock component with syntax highlighting and actions
+// Enhanced CodeBlock component with syntax highlighting, actions, and responsive design
 const CodeBlock = ({
   code,
   language,
@@ -107,7 +116,7 @@ const CodeBlock = ({
       </div>
 
       {/* Code Content with Horizontal Scroll */}
-      <div className="overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+      <div className="max-w-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
         <SyntaxHighlighter
           language={language}
           style={vscDarkPlus}
@@ -119,6 +128,9 @@ const CodeBlock = ({
             backgroundColor: "transparent",
             whiteSpace: "pre",
             minWidth: "100%",
+            maxWidth: "100%",
+            overflowWrap: "break-word",
+            wordBreak: "break-word",
           }}
           showLineNumbers={code.split("\n").length > 5}
           wrapLines={false}
@@ -205,8 +217,12 @@ const MessageContent = ({
         parts.push(
           <div
             key={`text-${lastIndex}`}
-            className="whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent hover:shadow-sm mb-3"
-            style={{ minWidth: "fit-content", maxWidth: "none" }}
+            className="whitespace-pre-wrap break-words leading-relaxed mb-3 text-sm max-w-[85%] rounded-lg p-3 break-words overflow-wrap-anywhere word-break-break-word hyphens-auto"
+            style={{
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
+              maxWidth: "100%",
+            }}
           >
             {formatTextContent(textContent)}
           </div>
@@ -240,8 +256,12 @@ const MessageContent = ({
       parts.push(
         <div
           key={`text-${lastIndex}`}
-          className="whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent hover:shadow-sm"
-          style={{ minWidth: "fit-content", maxWidth: "none" }}
+          className="whitespace-pre-wrap break-words leading-relaxed text-sm max-w-[85%] rounded-lg p-3 break-words overflow-wrap-anywhere word-break-break-word hyphens-auto"
+          style={{
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
+            maxWidth: "100%",
+          }}
         >
           {formatTextContent(remainingContent)}
         </div>
@@ -284,8 +304,12 @@ const MessageContent = ({
     // Otherwise, render as regular text
     return (
       <div
-        className="whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent hover:shadow-sm"
-        style={{ minWidth: "fit-content", maxWidth: "none" }}
+        className="whitespace-pre-wrap break-words leading-relaxed text-sm max-w-[85%] rounded-lg p-3 break-words overflow-wrap-anywhere word-break-break-word hyphens-auto"
+        style={{
+          wordBreak: "break-word",
+          overflowWrap: "break-word",
+          maxWidth: "100%",
+        }}
       >
         {formatTextContent(content)}
       </div>
@@ -376,7 +400,11 @@ const formatTextContent = (text: string): React.ReactNode => {
         parts.push(
           <code
             key={`inline-${inlineCodeMatch.index}`}
-            className="bg-slate-700/50 px-1 py-0.5 rounded text-xs font-mono text-blue-300"
+            className="bg-slate-700/50 px-1 py-0.5 rounded text-xs font-mono text-blue-300 break-words overflow-wrap-anywhere max-w-full"
+            style={{
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
+            }}
           >
             {inlineCodeMatch[1]}
           </code>
@@ -535,7 +563,7 @@ export function ChatBar({
 
   return (
     <div
-      className="flex flex-col h-full bg-slate-900 border-l border-slate-700/50 overflow-hidden min-w-0"
+      className="flex flex-col h-full bg-slate-900 border-l border-slate-700/50 overflow-hidden min-w-0 max-w-full"
       style={{ width: `${width}px` }}
     >
       {/* Header */}
@@ -579,7 +607,7 @@ export function ChatBar({
             className="flex-1 p-3 h-full overflow-hidden"
             style={{ minHeight: 0, flex: "1 1 auto" }}
           >
-            <div className="space-y-4 pr-2 pb-4 w-full">
+            <div className="space-y-4 pr-2 pb-4 w-full max-w-full">
               {messages.length === 0 && (
                 <div className="text-center py-8 text-slate-400">
                   <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -599,7 +627,7 @@ export function ChatBar({
               )}
 
               {messages.map((message) => (
-                <div key={message.id} className="flex gap-3 w-full">
+                <div key={message.id} className="flex gap-3 w-full max-w-full">
                   <div className="flex-shrink-0">
                     {message.role === "user" ? (
                       <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center">
@@ -612,7 +640,7 @@ export function ChatBar({
                     )}
                   </div>
                   {/* min-w-0 allows flex item to shrink */}
-                  <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                  <div className="flex-1 min-w-0 w-full overflow-hidden max-w-[85%]">
                     <div className="flex items-center justify-between mb-1 gap-2">
                       <span className="text-xs text-slate-400 truncate">
                         {message.role === "user" ? "You" : "Assistant"} •{" "}
@@ -624,7 +652,7 @@ export function ChatBar({
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-slate-200 min-w-0 overflow-x-auto">
+                    <div className="text-sm text-slate-200 min-w-0 w-full">
                       <MessageContent
                         content={message.content}
                         onInsertCode={onInsertCode}
@@ -697,6 +725,7 @@ export function ChatBar({
                   rounded-md px-3 py-2 text-sm text-slate-200
                   placeholder:text-slate-500
                   scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent
+                  max-w-full
                 "
                 style={{
                   minHeight: "40px",
@@ -704,11 +733,12 @@ export function ChatBar({
                   height: "40px",
                   wordBreak: "break-word",
                   overflowWrap: "break-word",
+                  maxWidth: "100%",
                 }}
               />
               {/* Character count for large inputs */}
               {input.length > 200 && (
-                <div className="text-xs text-slate-500 mt-1">
+                <div className="text-xs text-slate-500 mt-1 text-right">
                   {input.length}
                 </div>
               )}
@@ -729,7 +759,7 @@ export function ChatBar({
               </Button>
 
               {/* Keyboard shortcut hint */}
-              <div className="text-xs text-slate-500 break-words overflow-wrap-anywhere">
+              <div className="text-xs text-slate-500 break-words text-center">
                 Shift+Enter for new line • Cmd+Shift+I to toggle chat
               </div>
             </div>

@@ -48,4 +48,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Chat functionality
   sendChatMessage: (message) =>
     ipcRenderer.invoke("send-chat-message", message),
+
+  // AI Inline Code Completion
+  sendCodeCompletionRequest: (params) =>
+    ipcRenderer.send("get-code-completion", params),
+  onCodeCompletionResponse: (callback) =>
+    ipcRenderer.on("code-completion-response", callback),
 });

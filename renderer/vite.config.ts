@@ -14,11 +14,18 @@ export default defineConfig({
   server: {
     hmr: {
       overlay: false, // Disable error overlay that can cause reloads
+      port: 24678, // Use a specific port for HMR to avoid conflicts
     },
     watch: {
       // More specific file watching
-      ignored: ["**/node_modules/**", "**/dist/**"],
+      ignored: ["**/node_modules/**", "**/dist/**", "**/.git/**"],
+      // Reduce polling to minimize file system events
+      usePolling: false,
+      interval: 1000,
     },
+    // Add stability options
+    strictPort: true, // Don't try other ports if 5173 is busy
+    host: "localhost",
   },
   // Better optimization for development
   optimizeDeps: {
